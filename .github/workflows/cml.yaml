@@ -1,0 +1,25 @@
+name: model-wine
+on: [push]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write        # needed for cml-send-comment
+
+jobs:
+  run:
+    runs-on: ubuntu-22.04
+    container: docker://ghcr.io/iterative/cml:0-dvc2-base1
+    steps:
+      - uses: actions/checkout@v2
+      - name: cml_run
+        env:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install -r requirements.txt
+          python train.py
+          echo "## MODEL METRICS" > report.md
+          cat metrics.txt >> report.md
+          cml-publish feature_importance.png --md >> report.md
+          cml-publish residuals.png --md >> report.md
+          cml-send-comment report.md
